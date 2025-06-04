@@ -2,3 +2,6 @@
 .bsp
 project
 target
+data
+lib
+

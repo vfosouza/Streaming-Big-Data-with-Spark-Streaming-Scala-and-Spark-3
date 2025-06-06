@@ -47,3 +47,5 @@
    // EXERCISE
    // Write some code that takes the value of pi, doubles it, and then prints it within a string with
    // three decimal places of precision to the right.
+   val doubledPi = pi * 2
+   println(f"Doubled pi is $doubledPi%.3f")

@@ -29,3 +29,17 @@ transformInt(2, x => {val y = x * 2; y * y})
 // Strings have a built-in .toUpperCase method. For example, "foo".toUpperCase gives you back FOO.
 // Write a function that converts a string to upper-case, and use that function of a few test strings.
 // Then, do the same thing using a function literal instead of a separate, named function.
+// Named function
+def toUpperCase(s: String): String = {
+  s.toUpperCase
+}
+
+println(toUpperCase("hello"))
+println(toUpperCase("Scala"))
+println(toUpperCase("function"))
+
+// Function literal
+val upperCaseFunc: String => String = s => s.toUpperCase
+
+println(upperCaseFunc("literal"))
+println(upperCaseFunc("test"))

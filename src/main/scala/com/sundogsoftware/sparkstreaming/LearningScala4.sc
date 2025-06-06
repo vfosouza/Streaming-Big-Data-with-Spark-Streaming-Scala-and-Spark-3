@@ -12,6 +12,7 @@ println(captainStuff._2)
 println(captainStuff._3)
 
 val picardsShip = "Picard" -> "Enterprise-D"
+println(picardsShip._1)
 println(picardsShip._2)
 
 val aBunchOfStuff = ("Kirk", 1964, true)
@@ -67,3 +68,14 @@ println(archersShip)
 // modula operator, like other languages, is %, which gives you the remainder after division. For example, 9 % 3 = 0
 // because 9 is evenly divisible by 3.) Do this first by iterating through all the items in the list and testing each
 // one as you go. Then, do it again by using a filter function on the list instead.
+// Create a list of numbers from 1 to 20
+val numbers = (1 to 20).toList
+
+// 1. Iterate and test each number
+for (n <- numbers) {
+  if (n % 3 == 0) println(n)
+}
+
+// 2. Use filter to get numbers divisible by 3
+val divisibleByThree = numbers.filter(_ % 3 == 0)
+divisibleByThree.foreach(println)

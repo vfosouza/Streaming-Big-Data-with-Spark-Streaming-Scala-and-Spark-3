@@ -18,5 +18,10 @@ libraryDependencies ++= Seq(
   "com.datastax.spark" % "spark-cassandra-connector_2.12" % "3.1.0",
   "org.apache.spark" %% "spark-streaming-flume" % "2.4.8",
   "org.apache.spark" %% "spark-streaming-kafka-0-10" % "3.1.2",
-  "org.apache.spark" %% "spark-streaming-kinesis-asl" % "3.1.2"
+  "org.apache.spark" %% "spark-streaming-kinesis-asl" % "3.1.2",
+  "com.softwaremill.sttp.client3" %% "core" % "3.9.0",
+  "com.softwaremill.sttp.client3" %% "core" % "3.9.0",
+  "com.softwaremill.sttp.client3" %% "async-http-client-backend" % "3.9.0",
+  "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % "3.9.0",
+  "com.lihaoyi" %% "ujson" % "3.1.0"
 )

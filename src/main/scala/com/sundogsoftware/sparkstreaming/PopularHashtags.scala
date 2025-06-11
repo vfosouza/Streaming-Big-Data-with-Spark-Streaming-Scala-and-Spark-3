@@ -10,7 +10,7 @@ import java.io.File
 import scala.collection.mutable
 
 /** Listens to a stream of Tweets and keeps track of the most popular
- *  hashtags over a 5 minute window.
+ *  words over a 5 minute window.
  */
 object PopularHashtags {
 
@@ -33,9 +33,9 @@ object PopularHashtags {
 
     // Set up a Spark streaming context named "PopularHashtags" that runs locally using
     // all CPU cores and one-second batches of data
-    val conf = new SparkConf().setAppName("PopularHashtags").setMaster("local[*]")
+    val conf = new SparkConf().setAppName("PopularWords").setMaster("local[*]")
     val sc = new SparkContext(conf)
-    val ssc = new StreamingContext(sc, slideSize)
+    val ssc = new StreamingContext(sc, batchSize)
 
     // Create a queue of RDDs to stream from
     val rddQueue = new mutable.Queue[RDD[String]]()
@@ -99,26 +99,40 @@ object PopularHashtags {
     // Now extract the text of each status update into DStreams using map()
     val statuses = tweets.map(status => status)
 
-    // Blow out each word into a new DStream
-    val tweetwords = statuses.flatMap(tweetText => tweetText.split(" "))
+    // Define stop words to filter out
+    val stopWords = Set("a", "an", "the", "in", "on", "at", "to", "for", "with", "by",
+      "of", "and", "or", "is", "are", "was", "were", "be", "been",
+      "this", "that", "it", "i", "you", "he", "she", "they", "we",
+      "rt", "http", "https", "com", "amp")
 
-    // Now eliminate anything that's not a hashtag
-    val hashtags = tweetwords.filter(word => word.startsWith("#"))
+    // Split tweets into words, clean them and filter out stop words and short words
+    val tweetwords = statuses.flatMap(tweetText => {
+      // Convert to lowercase and remove punctuation
+      val text = tweetText.toLowerCase()
+        .replaceAll("[^a-zA-Z0-9\\s#@]", "")
+        .replaceAll("\\s+", " ")
+        .trim
 
-    // Map each hashtag to a key/value pair of (hashtag, 1) so we can count them up by adding up the values
-    val hashtagKeyValues = hashtags.map(hashtag => (hashtag, 1))
+      // Split into words
+      text.split(" ")
+        .filter(word => word.length > 2)         // Filter out very short words
+        .filter(word => !stopWords.contains(word)) // Filter out stop words
+    })
+
+    // Map each word to a key/value pair of (word, 1) so we can count them
+    val wordKeyValues = tweetwords.map(word => (word, 1))
 
     // Now count them up over the window sliding every specified interval
-    val hashtagCounts = hashtagKeyValues.reduceByKeyAndWindow((x,y) => x + y, (x,y) => x - y, windowSize, slideSize)
+    val wordCounts = wordKeyValues.reduceByKeyAndWindow((x,y) => x + y, (x,y) => x - y, windowSize, slideSize)
 
     // Sort the results by the count values
-    val sortedResults = hashtagCounts.transform(rdd => rdd.sortBy(x => x._2, false))
+    val sortedResults = wordCounts.transform(rdd => rdd.sortBy(x => x._2, false))
 
     // Print the top 10
     sortedResults.print
 
     // Set a checkpoint directory, and kick it all off
-    ssc.checkpoint("checkpoint/hashtags/")
+    ssc.checkpoint("checkpoint/words/")
     ssc.start()
     ssc.awaitTermination()
   }

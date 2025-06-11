@@ -19,6 +19,15 @@ object PopularHashtags {
 
     // Configure Twitter credentials using twitter.txt
     //setupTwitter()
+
+    // Parameters for experimentation
+    // Batch size: How frequently data is processed
+    // Window size: The duration of the window (how much historical data to consider)
+    // Slide size: How frequently the window slides forward
+    val batchSize = Seconds(1)    // Try different values like 2, 5, 10 seconds
+    val windowSize = Seconds(10) // Try different values like 60, 120, 600 seconds
+    val slideSize = Seconds(10)    // Try different values like 5, 10, 30 seconds
+
     // Get rid of log spam (should be called after the context is set up)
     setupLogging()
 
@@ -26,7 +35,7 @@ object PopularHashtags {
     // all CPU cores and one-second batches of data
     val conf = new SparkConf().setAppName("PopularHashtags").setMaster("local[*]")
     val sc = new SparkContext(conf)
-    val ssc = new StreamingContext(sc, Seconds(1))
+    val ssc = new StreamingContext(sc, slideSize)
 
     // Create a queue of RDDs to stream from
     val rddQueue = new mutable.Queue[RDD[String]]()
@@ -99,10 +108,8 @@ object PopularHashtags {
     // Map each hashtag to a key/value pair of (hashtag, 1) so we can count them up by adding up the values
     val hashtagKeyValues = hashtags.map(hashtag => (hashtag, 1))
 
-    // Now count them up over a 5 minute window sliding every one second
-    val hashtagCounts = hashtagKeyValues.reduceByKeyAndWindow( (x,y) => x + y, (x,y) => x - y, Seconds(300), Seconds(1))
-    //  You will often see this written in the following shorthand:
-    //val hashtagCounts = hashtagKeyValues.reduceByKeyAndWindow( _ + _, _ -_, Seconds(300), Seconds(1))
+    // Now count them up over the window sliding every specified interval
+    val hashtagCounts = hashtagKeyValues.reduceByKeyAndWindow((x,y) => x + y, (x,y) => x - y, windowSize, slideSize)
 
     // Sort the results by the count values
     val sortedResults = hashtagCounts.transform(rdd => rdd.sortBy(x => x._2, false))

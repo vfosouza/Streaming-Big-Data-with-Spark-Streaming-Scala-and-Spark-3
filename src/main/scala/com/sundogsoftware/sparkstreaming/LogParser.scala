@@ -42,7 +42,7 @@ object LogParser {
     sortedResults.print()
     
     // Kick it off
-    ssc.checkpoint("C:/checkpoint/")
+    ssc.checkpoint("checkpoint/logParser/")
     ssc.start()
     ssc.awaitTermination()
   }

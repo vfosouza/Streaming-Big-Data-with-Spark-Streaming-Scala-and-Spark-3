@@ -10,10 +10,10 @@ import java.io.File
 import scala.collection.mutable
 import org.apache.spark.rdd.RDD
 
-/** Uses thread-safe counters to keep track of the average length of
- *  Tweets in a stream.
+/** Uses thread-safe counters to keep track of the longest
+ *  Tweet in a stream.
  */
-object AverageTweetLength {
+object LongestTweetLength {
 
   /** Our main function where the action happens */
   def main(args: Array[String]) {
@@ -21,7 +21,7 @@ object AverageTweetLength {
     setupLogging()
 
     // Set up Spark context
-    val conf = new SparkConf().setAppName("AverageTweetLength").setMaster("local[*]")
+    val conf = new SparkConf().setAppName("LongestTweetLength").setMaster("local[*]")
     val sc = new SparkContext(conf)
 
     // Set up Spark streaming context with 1-second batches
@@ -91,21 +91,29 @@ object AverageTweetLength {
 
     // Thread-safe counters
     var totalTweets = new AtomicLong(0)
-    var totalChars = new AtomicLong(0)
+    var maxTweetLength = new AtomicLong(0)
 
     lengths.foreachRDD((rdd, time) => {
       var count = rdd.count()
       if (count > 0) {
         totalTweets.getAndAdd(count)
-        totalChars.getAndAdd(rdd.map(_.toLong).reduce(_ + _))
+
+        // Find the maximum length in this RDD
+        val maxInRdd = rdd.reduce((a, b) => Math.max(a, b))
+
+        // Update the global maximum if needed - simpler approach
+        val currentMax = maxTweetLength.get()
+        if (maxInRdd > currentMax) {
+          maxTweetLength.compareAndSet(currentMax, maxInRdd)
+        }
+
         println("Total tweets: " + totalTweets.get() +
-          " Total characters: " + totalChars.get() +
-          " Average: " + totalChars.get() / totalTweets.get())
+          " Longest tweet: " + maxTweetLength.get() + " characters")
       }
     })
 
     // Set a checkpoint directory, and kick it all off
-    ssc.checkpoint("checkpoint/average/")
+    ssc.checkpoint("checkpoint/longest/")
     ssc.start()
     ssc.awaitTermination()
   }

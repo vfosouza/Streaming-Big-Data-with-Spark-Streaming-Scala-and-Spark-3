@@ -64,8 +64,8 @@ object StructuredStreaming {
         .builder
         .appName("StructuredStreaming")
         .master("local[*]")
-        .config("spark.sql.warehouse.dir", "file:///C:/temp") // Necessary to work around a Windows bug in Spark 2.0.0; omit if you're not on Windows.
-        .config("spark.sql.streaming.checkpointLocation", "file:///C:/checkpoint")
+        //.config("spark.sql.warehouse.dir", "file:///C:/temp") // Necessary to work around a Windows bug in Spark 2.0.0; omit if you're not on Windows.
+        .config("spark.sql.streaming.checkpointLocation", "checkpoint/StructeredStreaming/") // Necessary to set a checkpoint location for structured streaming
         .getOrCreate()
         
       setupLogging()

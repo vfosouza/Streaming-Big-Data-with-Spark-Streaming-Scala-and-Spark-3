@@ -96,7 +96,7 @@ object CustomReceiverExample {
     sortedResults.print()
     
     // Kick it off
-    ssc.checkpoint("C:/checkpoint/")
+    ssc.checkpoint("checkpoint/CustomReceiverExample/")
     ssc.start()
     ssc.awaitTermination()
   }

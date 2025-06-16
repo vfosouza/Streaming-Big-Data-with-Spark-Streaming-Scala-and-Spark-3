@@ -1,61 +1,50 @@
-// Kafka setup instructions for Windows: https://dzone.com/articles/running-apache-kafka-on-windows-os
-
-package com.sundogsoftware.sparkstreaming
-
-import org.apache.spark.SparkConf
-import org.apache.spark.streaming.{Seconds, StreamingContext}
-import org.apache.spark.storage.StorageLevel
-
-import java.util.regex.Pattern
-import java.util.regex.Matcher
-
-import Utilities._
-
-import org.apache.spark.streaming.kafka010._
 import org.apache.kafka.common.serialization.StringDeserializer
+import org.apache.spark.SparkConf
+import org.apache.spark.streaming._
+import org.apache.spark.streaming.kafka010._
+import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
+import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
 
-/** Working example of listening for log data from Kafka's testLogs topic on port 9092. */
 object KafkaExample {
-  
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
+    // Set up the Spark configuration
+    val sparkConf = new SparkConf().setAppName("KafkaExample").setMaster("local[*]")
 
-    // Create the context with a 1 second batch size
-    val ssc = new StreamingContext("local[*]", "KafkaExample", Seconds(1))
-    
-    setupLogging()
-    
-    // Construct a regular expression (regex) to extract fields from raw Apache log lines
-    val pattern = apacheLogPattern()
+    // Create StreamingContext with a 2 second batch interval
+    val ssc = new StreamingContext(sparkConf, Seconds(2))
 
-    // hostname:port for Kafka brokers, not Zookeeper
-    val kafkaParams = Map("metadata.broker.list" -> "localhost:9092")
+    // Define Kafka parameters
+    val kafkaParams = Map[String, Object](
+      "bootstrap.servers" -> "localhost:9092",
+      "key.deserializer" -> classOf[StringDeserializer],
+      "value.deserializer" -> classOf[StringDeserializer],
+      "group.id" -> "spark-streaming-example",
+      "auto.offset.reset" -> "earliest",
+      "enable.auto.commit" -> (false: java.lang.Boolean)
+    )
+
     // List of topics you want to listen for from Kafka
-    val topics = List("testLogs").toSet
-    // Create our Kafka stream, which will contain (topic,message) pairs. We tack a 
-    // map(_._2) at the end in order to only get the messages, which contain individual
-    // lines of data.
-    val lines = KafkaUtils.createDirectStream[String, String](
-      ssc,
-      LocationStrategies.PreferConsistent,
-      ConsumerStrategies.Subscribe[String, String](topics, kafkaParams))
+    val topics = Array("testLogs") // Replace with your actual topic name
 
-    // Extract the request field from each log line
-    val requests = lines.map(x => {val matcher:Matcher = pattern.matcher(x.value().toString); if (matcher.matches()) matcher.group(5)})
-    
-    // Extract the URL from the request
-    val urls = requests.map(x => {val arr = x.toString().split(" "); if (arr.size == 3) arr(1) else "[error]"})
-    
-    // Reduce by URL over a 5-minute window sliding every second
-    val urlCounts = urls.map(x => (x, 1)).reduceByKeyAndWindow(_ + _, _ - _, Seconds(300), Seconds(1))
-    
-    // Sort and print the results
-    val sortedResults = urlCounts.transform(rdd => rdd.sortBy(x => x._2, false))
-    sortedResults.print()
-    
-    // Kick it off
-    ssc.checkpoint("C:/checkpoint/")
+    // Create direct Kafka stream
+    val stream = KafkaUtils.createDirectStream[String, String](
+      ssc,
+      PreferConsistent,
+      Subscribe[String, String](topics, kafkaParams)
+    )
+
+    // Process the stream
+    val lines = stream.map(record => record.value)
+
+    // Count words
+    val words = lines.flatMap(_.split(" "))
+    val wordCounts = words.map(word => (word, 1)).reduceByKey(_ + _)
+
+    // Print the results
+    wordCounts.print()
+
+    // Start the stream processing
     ssc.start()
     ssc.awaitTermination()
   }
 }
-

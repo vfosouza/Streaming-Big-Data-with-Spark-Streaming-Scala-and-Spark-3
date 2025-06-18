@@ -56,7 +56,7 @@ object StreamingKMeansExample {
     model.predictOnValues(testData.map(lp => (lp.label.toInt, lp.features))).print()
     
     // Kick it off
-    ssc.checkpoint("C:/checkpoint/")
+    ssc.checkpoint("checkpoint/KMeansExample/")
     ssc.start()
     ssc.awaitTermination()
   }

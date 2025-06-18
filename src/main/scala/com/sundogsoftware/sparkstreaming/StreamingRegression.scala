@@ -60,7 +60,7 @@ object StreamingRegression {
     model.predictOnValues(testData.map(lp => (lp.label, lp.features))).print()
     
     // Kick it off
-    ssc.checkpoint("C:/checkpoint/")
+    ssc.checkpoint("checkpoint/Regression/")
     ssc.start()
     ssc.awaitTermination()
   }

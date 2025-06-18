@@ -115,7 +115,7 @@ object Sessionizer {
     })
     
     // Kick it off
-    ssc.checkpoint("C:/checkpoint/")
+    ssc.checkpoint("checkpoint/Sessionizer/")
     ssc.start()
     ssc.awaitTermination()
   }
